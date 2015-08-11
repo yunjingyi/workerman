@@ -48,7 +48,7 @@ class Timer
         }
         else 
         {
-            pcntl_signal(SIGALRM, array('\Workerman\Lib\Timer', 'signalHandle'), false);
+            pcntl_signal(SIGALRM, array('\Workerman\Lib\Timer', 'signalHandle'), false); //标明SIGALRM处理函数
         }
     }
     
@@ -116,7 +116,7 @@ class Timer
     {
         if(empty(self::$_tasks))
         {
-            pcntl_alarm(0);
+            pcntl_alarm(0); //标明接受SIGALRM信号
             return;
         }
         

@@ -219,7 +219,7 @@ class Websocket implements \Workerman\Protocols\ProtocolInterface
      * @return string
      */
     public static function decode($buffer, ConnectionInterface $connection)
-    {
+    { //机制
         $len = $masks = $data = $decoded = null;
         $len = ord($buffer[1]) & 127;
         if ($len === 126) {

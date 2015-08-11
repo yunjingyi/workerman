@@ -17,7 +17,7 @@ class TcpConnection extends ConnectionInterface
      * 当数据可读时，从socket缓冲区读取多少字节数据
      * @var int
      */
-    const READ_BUFFER_SIZE = 8192;
+    const READ_BUFFER_SIZE = 8192; //8KB
 
     /**
      * 连接状态 连接中
@@ -98,10 +98,10 @@ class TcpConnection extends ConnectionInterface
      * 如果没设置onBufferFull回调，由于发送缓冲区满，则后续发送的数据将被丢弃，
      * 直到发送缓冲区有空的位置
      * 注意 此值可以动态设置
-     * 例如 Workerman\Connection\TcpConnection::$maxSendBufferSize=1024000;
+     * 例如 Workerman\Connection\TcpConnection::$maxSendBufferSize=1024000; //1000KB
      * @var int
      */
-    public static $maxSendBufferSize = 1048576;
+    public static $maxSendBufferSize = 1048576; //1024KB
     
     /**
      * 能接受的最大数据包，为了防止恶意攻击，当数据包的大小大于此值时执行断开
@@ -109,13 +109,13 @@ class TcpConnection extends ConnectionInterface
      * 例如 Workerman\Connection\TcpConnection::$maxPackageSize=1024000;
      * @var int
      */
-    public static $maxPackageSize = 10485760;
+    public static $maxPackageSize = 10485760; //1MB
     
     /**
      * id 记录器
      * @var int
      */
-    protected static $_idRecorder = 1;
+    protected static $_idRecorder = 1; //静态，分配连接id
     
     /**
      * 实际的socket资源
@@ -181,8 +181,8 @@ class TcpConnection extends ConnectionInterface
     {
         $this->id = self::$_idRecorder++;
         $this->_socket = $socket;
-        stream_set_blocking($this->_socket, 0);
-        Worker::$globalEvent->add($this->_socket, EventInterface::EV_READ, array($this, 'baseRead'));
+        stream_set_blocking($this->_socket, 0); //非阻塞
+        Worker::$globalEvent->add($this->_socket, EventInterface::EV_READ, array($this, 'baseRead')); //表明读事件监听
     }
     
     /**
@@ -354,7 +354,7 @@ class TcpConnection extends ConnectionInterface
      */
     public function baseRead($socket)
     {
-       while($buffer = fread($socket, self::READ_BUFFER_SIZE))
+       while($buffer = fread($socket, self::READ_BUFFER_SIZE)) //读数据
        {
           $this->_recvBuffer .= $buffer; 
        }
@@ -384,7 +384,7 @@ class TcpConnection extends ConnectionInterface
                    else
                    {
                        // 获得当前包长
-                       $this->_currentPackageLength = $parser::input($this->_recvBuffer, $this);
+                       $this->_currentPackageLength = $parser::input($this->_recvBuffer, $this); //使用协议分包
                        // 数据不够，无法获得包长
                        if($this->_currentPackageLength === 0)
                        {
@@ -416,7 +416,7 @@ class TcpConnection extends ConnectionInterface
                    // 处理数据包
                    try
                    {
-                       call_user_func($this->onMessage, $this, $parser::decode($one_request_buffer, $this));
+                       call_user_func($this->onMessage, $this, $parser::decode($one_request_buffer, $this)); //协议解码
                    }
                    catch(Exception $e)
                    {

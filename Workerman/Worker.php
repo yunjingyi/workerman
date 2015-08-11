@@ -64,7 +64,7 @@ class Worker
      * udp最大包长
      * @var int
      */
-    const MAX_UDP_PACKEG_SIZE = 65535;
+    const MAX_UDP_PACKEG_SIZE = 65535; //64KB
     
     /**
      * worker的名称，用于在运行status命令时标记进程
@@ -298,7 +298,7 @@ class Worker
      * 运行所有worker实例
      * @return void
      */
-    public static function runAll()
+    public static function runAll()  //与具体worker实例无关
     {
         // 初始化环境变量
         self::init();
@@ -328,12 +328,13 @@ class Worker
      */
     public static function init()
     {
+
         // 如果没设置$pidFile，则生成默认值
         if(empty(self::$pidFile))
         {
-            $backtrace = debug_backtrace();
+            $backtrace = debug_backtrace(); //debug_backtrace 调试跟踪器
             self::$_startFile = $backtrace[count($backtrace)-1]['file'];
-            self::$pidFile = sys_get_temp_dir()."/workerman.".str_replace('/', '_', self::$_startFile).".pid";
+            self::$pidFile = sys_get_temp_dir()."/workerman.".str_replace('/', '_', self::$_startFile).".pid"; //所有app start文件路径生成主进程pid文件
         }
         // 没有设置日志文件，则生成一个默认值
         if(empty(self::$logFile))
@@ -364,7 +365,7 @@ class Worker
             // 没有设置worker名称，则使用none代替
             if(empty($worker->name))
             {
-                $worker->name = 'none';
+                $worker->name = 'none'; //可以设置worker name
             }
             // 获得所有worker名称中最大长度
             $worker_name_length = strlen($worker->name);
@@ -381,10 +382,10 @@ class Worker
             // 获得运行用户名的最大长度
             if(empty($worker->user) || posix_getuid() !== 0)
             {
-                $worker->user = self::getCurrentUser();
+                $worker->user = self::getCurrentUser();//yungu 之类
             }
             $user_name_length = strlen($worker->user);
-            if(self::$_maxUserNameLength < $user_name_length)
+            if(self::$_maxUserNameLength < $user_name_length) //所有string都有长度限制
             {
                 self::$_maxUserNameLength = $user_name_length;
             }
@@ -407,12 +408,13 @@ class Worker
      * 展示启动界面
      * @return void
      */
-    protected static function displayUI()
+    protected static function displayUI() //不错的ui界面
     {
         echo "\033[1A\n\033[K-----------------------\033[47;30m WORKERMAN \033[0m-----------------------------\n\033[0m";
         echo 'Workerman version:' . Worker::VERSION . "          PHP version:".PHP_VERSION."\n";
         echo "------------------------\033[47;30m WORKERS \033[0m-------------------------------\n";
         echo "\033[47;30muser\033[0m",str_pad('', self::$_maxUserNameLength+2-strlen('user')), "\033[47;30mworker\033[0m",str_pad('', self::$_maxWorkerNameLength+2-strlen('worker')), "\033[47;30mlisten\033[0m",str_pad('', self::$_maxSocketNameLength+2-strlen('listen')), "\033[47;30mprocesses\033[0m \033[47;30m","status\033[0m\n";
+
         foreach(self::$_workers as $worker)
         {
             echo str_pad($worker->user, self::$_maxUserNameLength+2),str_pad($worker->name, self::$_maxWorkerNameLength+2),str_pad($worker->getSocketName(), self::$_maxSocketNameLength+2), str_pad(' '.$worker->count, 9), " \033[32;40m [OK] \033[0m\n";;
@@ -446,7 +448,7 @@ class Worker
         
         // 检查主进程是否在运行
         $master_pid = @file_get_contents(self::$pidFile);
-        $master_is_alive = $master_pid && @posix_kill($master_pid, 0);
+        $master_is_alive = $master_pid && @posix_kill($master_pid, 0); //发信号证明进程存在
         if($master_is_alive)
         {
             if($command === 'start')
@@ -598,23 +600,23 @@ class Worker
      * 尝试以守护进程的方式运行
      * @throws Exception
      */
-    protected static function daemonize()
+    protected static function daemonize() //fork方式变成daemonize 详见APUE 章13
     {
         if(!self::$daemonize)
         {
             return;
         }
         umask(0);
-        $pid = pcntl_fork();
+        $pid = pcntl_fork(); //创建子进程
         if(-1 == $pid)
         {
             throw new Exception('fork fail');
         }
         elseif($pid > 0)
         {
-            exit(0);
+            exit(0); //父进程正常退出
         }
-        if(-1 == posix_setsid())
+        if(-1 == posix_setsid()) //session leader shell
         {
             throw new Exception("setsid fail");
         }
@@ -641,7 +643,7 @@ class Worker
             return;
         }
         global $STDOUT, $STDERR;
-        $handle = fopen(self::$stdoutFile,"a");
+        $handle = fopen(self::$stdoutFile,"a"); //dev/null
         if($handle) 
         {
             unset($handle);
@@ -662,7 +664,7 @@ class Worker
      */
     protected static function saveMasterPid()
     {
-        self::$_masterPid = posix_getpid();
+        self::$_masterPid = posix_getpid(); //主进程pid
         if(false === @file_put_contents(self::$pidFile, self::$_masterPid))
         {
             throw new Exception('can not save pid to ' . self::$pidFile);
@@ -734,7 +736,7 @@ class Worker
         {
             self::$_pidMap = array();
             self::$_workers = array($worker->workerId => $worker);
-            Timer::delAll();
+            Timer::delAll(); //删除所有定时
             self::setProcessTitle('WorkerMan: worker process  ' . $worker->name . ' ' . $worker->getSocketName());
             self::setProcessUser($worker->user);
             $worker->run();
@@ -1098,7 +1100,7 @@ class Worker
      * @param string $socket_name
      * @return void
      */
-    public function __construct($socket_name = '', $context_option = array())
+    public function __construct($socket_name = '', $context_option = array()) //option中可配置连接数
     {
         // 保存worker实例
         $this->workerId = spl_object_hash($this);
@@ -1112,12 +1114,12 @@ class Worker
         // 设置socket上下文
         if($socket_name)
         {
-            $this->_socketName = $socket_name;
+            $this->_socketName = $socket_name;//tcp://0.0.0.0:2346
             if(!isset($context_option['socket']['backlog']))
             {
                 $context_option['socket']['backlog'] = self::DEFAUL_BACKLOG;
             }
-            $this->_context = stream_context_create($context_option);
+            $this->_context = stream_context_create($context_option); //socket 上下文 http://li1.php.net/manual/en/context.socket.php
         }
     }
     
@@ -1135,7 +1137,7 @@ class Worker
             return;
         }
         // 获得应用层通讯协议以及监听的地址
-        list($scheme, $address) = explode(':', $this->_socketName, 2);
+        list($scheme, $address) = explode(':', $this->_socketName, 2); //根据socketName来设置传输协议
         // 如果有指定应用层协议，则检查对应的协议类是否存在
         if($scheme != 'tcp' && $scheme != 'udp')
         {
@@ -1157,7 +1159,7 @@ class Worker
         
         // flag
         $flags =  $this->transport === 'udp' ? STREAM_SERVER_BIND : STREAM_SERVER_BIND | STREAM_SERVER_LISTEN;
-        $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg, $flags, $this->_context);
+        $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg, $flags, $this->_context); //监听
         if(!$this->_mainSocket)
         {
             throw new Exception($errmsg);
